@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import configData from "../../config/app_config.json";
+import householdData from "../../config/household.json";
 import { FormContent } from "./formContent";
 import { HouseholdContext } from "../../contexts/HouseholdContext";
 import { CurrentDateContext } from "../../contexts/CurrentDateContext";
@@ -24,7 +25,58 @@ function CaluculationForm() {
         configData.URL.OpenFisca_API.dev // developブランチプッシュ時にビルドされるバックエンドAPI。Cloud Run
       : "http://localhost:50000";
 
+  const initHousehold = useCallback(() => {
+    let household: any;
+    household = { 世帯員: { あなた: {} }, 世帯: { 世帯1: {} } };
+    for (let memberKey of householdData.世帯員) {
+      let memberVal;
+      if (memberKey === "誕生年月日") {
+        memberVal = { ETERNITY: "" };
+      } else if (memberKey === "収入") {
+        memberVal = { [currentDate]: 0 };
+      } else if (memberKey === "身体障害者手帳交付年月日") {
+        memberVal = { ETERNITY: lastYearDate };
+      } else if (memberKey === "学生") {
+        memberVal = { [currentDate]: false };
+      } else {
+        memberVal = { ETERNITY: "無" };
+      }
+      household.世帯員.あなた[memberKey] = memberVal;
+    }
+
+    for (let memberKey of householdData.世帯) {
+      let memberVal;
+      if (memberKey === "自分一覧") {
+        memberVal = ["あなた"];
+      } else if (
+        memberKey === "配偶者一覧" ||
+        memberKey === "子一覧" ||
+        memberKey === "親一覧"
+      ) {
+        continue;
+      } else {
+        memberVal = {
+          [currentDate]: null,
+        };
+      }
+      household.世帯.世帯1[memberKey] = memberVal;
+    }
+
+    for (let memberKey of householdData.制度) {
+      let memberVal = {
+        [currentDate]: null,
+      };
+
+      household.世帯.世帯1[memberKey] = memberVal;
+    }
+    return household;
+  }, []);
+
   // NOTE: 計算したい制度については、予めここに設定する必要がある
+  // TODO: 定義ファイルから設定
+  const [household, setHousehold] = useState<any>(() => initHousehold());
+
+  /*
   const [household, setHousehold] = useState({
     世帯員: {
       あなた: {
@@ -68,18 +120,18 @@ function CaluculationForm() {
         児童育成手当: {
           [currentDate]: null,
         },
-        */
+        
         特別児童扶養手当_最小: {
           [currentDate]: null,
         },
         特別児童扶養手当_最大: {
           [currentDate]: null,
         },
-        /* 障害児童育成手当は東京都のみの制度のため除外
+         障害児童育成手当は東京都のみの制度のため除外
         障害児童育成手当: {
           [currentDate]: null,
         },
-        */
+        
         障害児福祉手当: {
           [currentDate]: null,
         },
@@ -95,11 +147,11 @@ function CaluculationForm() {
         緊急小口資金: {
           [currentDate]: null,
         },
-        /* 住宅入居費はチェックボックスを有効化するまで除外
+         住宅入居費はチェックボックスを有効化するまで除外
         住宅入居費: {
           [currentDate]: null,
         },
-        */
+        
         教育支援費: {
           [currentDate]: null,
         },
@@ -112,6 +164,8 @@ function CaluculationForm() {
       },
     },
   });
+  */
+
   const householdContextValue = {
     household,
     setHousehold,
