@@ -24,6 +24,7 @@ export const FormContent = () => {
   const navigate = useNavigate();
   const currentDate = useContext(CurrentDateContext);
   const { household, setHousehold } = useContext(HouseholdContext);
+  const [urlMade, setUrlMade] = useState("");
 
   interface pmType {
     [key: string]: string[];
@@ -159,6 +160,16 @@ export const FormContent = () => {
       }
     }
     console.log(url);
+
+    setUrlMade(url);
+  }, []);
+
+  const decodeURL = useCallback(() => {
+    let groupIdx = urlMade.indexOf("_gro");
+    let seidoIdx = urlMade.indexOf("_sei");
+    let memberUrl = urlMade.slice(4, groupIdx);
+    let groupUrl = urlMade.slice(groupIdx + 3, seidoIdx);
+    let seidoUrl = urlMade.slice(seidoIdx + 3);
   }, []);
 
   return (
