@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { CurrentDateContext } from "../../contexts/CurrentDateContext";
 import { FormParents } from "./parents";
 import { HouseholdContext } from "../../contexts/HouseholdContext";
+import { useInitHousehold } from "../../hooks/initHousehold";
 
 export const FormContent = () => {
   const [result, calculate] = useCalculate();
@@ -25,6 +26,12 @@ export const FormContent = () => {
   const currentDate = useContext(CurrentDateContext);
   const { household, setHousehold } = useContext(HouseholdContext);
   const [urlMade, setUrlMade] = useState("");
+
+  const initHousehold = useInitHousehold(currentDate);
+  const [decodedHousehold, setDecodedHousehold] = useState<any>({
+    世帯員: { あなた: {} },
+    世帯: { 世帯1: {} },
+  });
 
   interface pmType {
     [key: string]: string[];
@@ -57,7 +64,7 @@ export const FormContent = () => {
     if ("親一覧" in household.世帯.世帯1) {
       mem_arr = mem_arr.concat(household.世帯.世帯1["親一覧"]);
     }
-    console.log(mem_arr);
+    // console.log(mem_arr);
     let url = "mem";
 
     for (const mem of mem_arr) {
@@ -90,8 +97,8 @@ export const FormContent = () => {
               url += `_${i}-1`;
             }
           } else if (memberVal.ETERNITY !== "無") {
-            console.log(memberKey);
-            console.log(memberVal);
+            // console.log(memberKey);
+            // console.log(memberVal);
             if (
               memberVal.ETERNITY === "有" ||
               memberVal.ETERNITY === "A" ||
@@ -124,13 +131,9 @@ export const FormContent = () => {
     for (let i in householdData.世帯) {
       let memberKey = householdData.世帯[i];
       if (memberKey in household.世帯.世帯1) {
-        if (memberKey === "自分一覧") {
-          continue;
-        } else if (memberKey === "配偶者一覧") {
-          url += `_${i}`;
-        } else if (memberKey === "子一覧") {
-          url += `_${i}-${household.世帯.世帯1[memberKey].length}`;
-        } else if (memberKey === "親一覧") {
+        if (memberKey === "自分一覧" || memberKey === "配偶者一覧") {
+          url += `_${i}-1`;
+        } else if (memberKey === "子一覧" || memberKey === "親一覧") {
           url += `_${i}-${household.世帯.世帯1[memberKey].length}`;
         } else if (memberKey === "居住都道府県") {
           url =
@@ -141,6 +144,8 @@ export const FormContent = () => {
         } else if (memberKey === "居住市区町村") {
           const municipalityArray =
             pmObj[household.世帯.世帯1["居住都道府県"][currentDate]];
+          // console.log(municipalityArray);
+          // console.log(household.世帯.世帯1["居住都道府県"][currentDate]);
           url =
             url +
             `_${i}-${municipalityArray.indexOf(
@@ -162,14 +167,220 @@ export const FormContent = () => {
     console.log(url);
 
     setUrlMade(url);
+    return url;
   }, []);
 
-  const decodeURL = useCallback(() => {
-    let groupIdx = urlMade.indexOf("_gro");
-    let seidoIdx = urlMade.indexOf("_sei");
-    let memberUrl = urlMade.slice(4, groupIdx);
-    let groupUrl = urlMade.slice(groupIdx + 3, seidoIdx);
-    let seidoUrl = urlMade.slice(seidoIdx + 3);
+  // URLをデコードしhouseholdを作成
+  const decodeURL = useCallback((url: string) => {
+    console.log(url);
+    const newHousehold = { ...decodedHousehold };
+    let groupIdx = url.indexOf("_gro");
+    let seidoIdx = url.indexOf("_sei");
+    let memberUrl = url.slice(4, groupIdx);
+    let groupUrl = url.slice(groupIdx + 5, seidoIdx);
+    let seidoUrl = url.slice(seidoIdx + 5);
+    console.log(memberUrl);
+    console.log(groupUrl);
+    console.log(seidoUrl);
+
+    let groupArr = groupUrl.split("_");
+    let seidoArr = seidoUrl.split("_");
+
+    let spouseExists = false;
+    let childrenNum = 0;
+    let parentsNum = 0;
+
+    // 世帯情報を復元
+    for (let groupInfo of groupArr) {
+      let groupItem = groupInfo.split("-");
+      let groupKey = Number(groupItem[0]);
+      let groupVal = Number(groupItem[1]);
+
+      if (groupKey === 0) {
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = ["あなた"];
+      } else if (groupKey === 1) {
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = ["配偶者"];
+        spouseExists = true;
+      } else if (groupKey === 2) {
+        childrenNum = groupVal;
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = [
+          ...Array(groupVal),
+        ].map((_, i) => `子ども${i}`);
+      } else if (groupKey === 3) {
+        parentsNum = groupVal;
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = [
+          ...Array(groupVal),
+        ].map((_, i) => `親${i}`);
+      } else if (groupKey === 4) {
+        let prefecture = prefectureArray[groupVal];
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = {
+          [currentDate]: prefecture,
+        };
+      } else if (groupKey === 5) {
+        let prefecture = newHousehold.世帯.世帯1["居住都道府県"][currentDate];
+        const municipality = pmObj[prefecture][groupVal];
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = {
+          [currentDate]: municipality,
+        };
+      } else if (groupKey === 6) {
+        newHousehold.世帯.世帯1[householdData.世帯[groupKey]] = {
+          [currentDate]: true,
+        };
+      }
+    }
+
+    // 制度情報を復元
+    for (let seidoIdx of seidoArr) {
+      newHousehold.世帯.世帯1[householdData.制度[Number(seidoIdx)]] = {
+        [currentDate]: null,
+      };
+    }
+
+    // 世帯員情報を復元
+    let memberObj: any = {};
+    if (spouseExists) {
+      memberObj["あなた"] = memberUrl
+        .slice(3, memberUrl.indexOf("_sp"))
+        .split("_");
+    } else if (childrenNum > 0) {
+      memberObj["あなた"] = memberUrl
+        .slice(3, memberUrl.indexOf("_ch"))
+        .split("_");
+    } else if (parentsNum > 0) {
+      memberObj["あなた"] = memberUrl
+        .slice(3, memberUrl.indexOf("_pa"))
+        .split("_");
+    } else {
+      memberObj["あなた"] = memberUrl.slice(3).split("_");
+    }
+
+    if (spouseExists) {
+      let spouseIdx = memberUrl.indexOf("_sp") + 4;
+      if (childrenNum > 0) {
+        memberObj["配偶者"] = memberUrl
+          .slice(spouseIdx, memberUrl.indexOf("_ch"))
+          .split("_");
+      } else if (parentsNum > 0) {
+        memberObj["配偶者"] = memberUrl
+          .slice(spouseIdx, memberUrl.indexOf("_pa"))
+          .split("_");
+      } else {
+        memberObj["配偶者"] = memberUrl.slice(spouseIdx).split("_");
+      }
+    }
+
+    let childrenArr = [];
+    if (childrenNum > 0) {
+      let childrenIdx = memberUrl.indexOf("_ch") + 3;
+      if (parentsNum > 0) {
+        childrenArr = memberUrl
+          .slice(childrenIdx, memberUrl.indexOf("_pa"))
+          .split("_ch");
+      } else {
+        childrenArr = memberUrl.slice(childrenIdx).split("_ch");
+      }
+      for (let childInfo of childrenArr) {
+        let childArr = childInfo.split("_");
+        memberObj[`子ども${childArr[0]}`] = childArr.slice(1);
+      }
+    }
+
+    let parentsArr = [];
+    if (parentsNum > 0) {
+      let parentsIdx = memberUrl.indexOf("_ch") + 3;
+      if (parentsNum > 0) {
+        parentsArr = memberUrl
+          .slice(parentsIdx, memberUrl.indexOf("_pa"))
+          .split("_ch");
+      } else {
+        parentsArr = memberUrl.slice(parentsIdx).split("_ch");
+      }
+      for (let parentInfo of parentsArr) {
+        let parentArr = parentInfo.split("_");
+        memberObj[`親${parentArr[0]}`] = parentArr.slice(1);
+      }
+    }
+
+    for (let member of Object.keys(memberObj)) {
+      newHousehold.世帯員[member] = {};
+      let memberArr = memberObj[member];
+
+      for (let memberInfo of memberArr) {
+        let memberItem = memberInfo.split("-");
+        let memberIdx = Number(memberItem[0]);
+        let memberVal = memberItem[1];
+        // console.log(memberItem);
+
+        let memberInfoName = householdData.世帯員[memberIdx];
+        let householdMem = {};
+        if (
+          memberInfoName === "誕生年月日" ||
+          memberInfoName === "身体障害者手帳交付年月日"
+        ) {
+          householdMem = {
+            ETERNITY: `${memberVal.slice(0, 4)}-${memberVal.slice(
+              4,
+              6
+            )}-${memberVal.slice(6, 8)}`,
+          };
+        } else if (memberInfoName === "収入") {
+          householdMem = {
+            [currentDate]: Number(memberVal),
+          };
+        } else if (memberInfoName === "学生") {
+          householdMem = {
+            [currentDate]: true,
+          };
+        } else if (
+          // memberInfoName === "身体障害者手帳等級認定" || // TODO: 交付年月日をなくす
+          memberInfoName === "精神障害者保健福祉手帳等級"
+        ) {
+          if (memberVal === "1") {
+            householdMem = { [currentDate]: "一級" };
+          } else if (memberVal === "2") {
+            householdMem = { [currentDate]: "二級" };
+          } else if (memberVal === "3") {
+            householdMem = { [currentDate]: "三級" };
+          } else if (memberVal === "4") {
+            householdMem = { [currentDate]: "四級" };
+          } else if (memberVal === "5") {
+            householdMem = { [currentDate]: "五級" };
+          } else if (memberVal === "6") {
+            householdMem = { [currentDate]: "六級" };
+          } else if (memberVal === "7") {
+            householdMem = { [currentDate]: "七級" };
+          }
+        } else if (memberInfoName === "愛の手帳等級") {
+          if (memberVal === "1") {
+            householdMem = { [currentDate]: "一度" };
+          } else if (memberVal === "2") {
+            householdMem = { [currentDate]: "二度" };
+          } else if (memberVal === "3") {
+            householdMem = { [currentDate]: "三度" };
+          } else if (memberVal === "4") {
+            householdMem = { [currentDate]: "四度" };
+          }
+        } else if (memberInfoName === "療育手帳等級") {
+          if (memberVal === "1") {
+            householdMem = { [currentDate]: "A" };
+          } else if (memberVal === "2") {
+            householdMem = { [currentDate]: "B" };
+          }
+        } else if (
+          memberInfoName === "内部障害" ||
+          memberInfoName === "脳性まひ_進行性筋萎縮症"
+        ) {
+          householdMem = { [currentDate]: "有" };
+        }
+
+        newHousehold.世帯員[member][memberInfoName] = householdMem;
+      }
+    }
+
+    console.log(newHousehold);
+
+    setDecodedHousehold(newHousehold);
+    return newHousehold;
   }, []);
 
   return (
@@ -209,9 +420,10 @@ export const FormContent = () => {
                 scrollTo(0, 0);
                 return;
               }
-              encodeURL();
+              let url = encodeURL();
+              let household = decodeURL(url);
               setLoading(true);
-              calculate();
+              calculate(household);
               setShowResult(true);
             }}
           >

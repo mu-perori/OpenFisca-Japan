@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
 import configData from "../../config/app_config.json";
-import householdData from "../../config/household.json";
+
 import { FormContent } from "./formContent";
 import { HouseholdContext } from "../../contexts/HouseholdContext";
 import { CurrentDateContext } from "../../contexts/CurrentDateContext";
 import { APIServerURLContext } from "../../contexts/APIServerURLContext";
+import { useInitHousehold } from "../../hooks/initHousehold";
 
 function CaluculationForm() {
   // 日付は「YYYY-MM-DD」の桁数フォーマットでないとOpenFisca APIが正常動作しない
@@ -25,56 +26,10 @@ function CaluculationForm() {
         configData.URL.OpenFisca_API.dev // developブランチプッシュ時にビルドされるバックエンドAPI。Cloud Run
       : "http://localhost:50000";
 
-  const initHousehold = useCallback(() => {
-    let household: any;
-    household = { 世帯員: { あなた: {} }, 世帯: { 世帯1: {} } };
-    for (let memberKey of householdData.世帯員) {
-      let memberVal;
-      if (memberKey === "誕生年月日") {
-        memberVal = { ETERNITY: "" };
-      } else if (memberKey === "収入") {
-        memberVal = { [currentDate]: 0 };
-      } else if (memberKey === "身体障害者手帳交付年月日") {
-        memberVal = { ETERNITY: lastYearDate };
-      } else if (memberKey === "学生") {
-        memberVal = { [currentDate]: false };
-      } else {
-        memberVal = { ETERNITY: "無" };
-      }
-      household.世帯員.あなた[memberKey] = memberVal;
-    }
-
-    for (let memberKey of householdData.世帯) {
-      let memberVal;
-      if (memberKey === "自分一覧") {
-        memberVal = ["あなた"];
-      } else if (
-        memberKey === "配偶者一覧" ||
-        memberKey === "子一覧" ||
-        memberKey === "親一覧"
-      ) {
-        continue;
-      } else {
-        memberVal = {
-          [currentDate]: null,
-        };
-      }
-      household.世帯.世帯1[memberKey] = memberVal;
-    }
-
-    for (let memberKey of householdData.制度) {
-      let memberVal = {
-        [currentDate]: null,
-      };
-
-      household.世帯.世帯1[memberKey] = memberVal;
-    }
-    return household;
-  }, []);
-
   // NOTE: 計算したい制度については、予めここに設定する必要がある
   // TODO: 定義ファイルから設定
-  const [household, setHousehold] = useState<any>(() => initHousehold());
+  const initHousehold = useInitHousehold(currentDate);
+  const [household, setHousehold] = useState<any>(initHousehold);
 
   /*
   const [household, setHousehold] = useState({

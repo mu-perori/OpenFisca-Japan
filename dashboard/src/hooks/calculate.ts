@@ -4,11 +4,11 @@ import { APIServerURLContext } from "../contexts/APIServerURLContext";
 
 export const useCalculate = () => {
   const [result, setResult] = useState<any>();
-  const { household } = useContext(HouseholdContext);
+  // const { household } = useContext(HouseholdContext);
   const apiURL = useContext(APIServerURLContext);
 
   // HTTPリクエストを必要最小限にするため、明示的に関数を呼び出した時のみ結果を更新
-  const calculate = async () => {
+  const calculate = async (household: any) => {
     if (!household) {
       return;
     }
