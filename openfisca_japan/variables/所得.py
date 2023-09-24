@@ -107,7 +107,7 @@ class 世帯高所得(Variable):
 
     def formula(対象世帯, 対象期間, _parameters):
         各所得 = 対象世帯.members("所得", 対象期間)
-        return np.max(各所得)
+        return 対象世帯.max(各所得)
 
 
 class 障害者控除(Variable):
