@@ -1,4 +1,9 @@
-import { Navigate, Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
+import {
+  Navigate,
+  Link as RouterLink,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   Box,
@@ -42,6 +47,7 @@ export const Result = () => {
 
   const currentDate = useContext(CurrentDateContext);
   const [result, calculate] = useCalculate();
+  const [isDisplayChat, setIsDisplayChat] = useState("none");
 
   let calcOnce = true;
   useEffect(() => {
@@ -147,6 +153,9 @@ export const Result = () => {
     link: "https://www.zcwvc.net/about/list.html",
     title: "全国の社会福祉協議会一覧",
   };
+
+  const sleep = (second: number) =>
+    new Promise((resolve) => setTimeout(resolve, second * 1000));
 
   return (
     <div ref={divRef}>
@@ -325,11 +334,33 @@ export const Result = () => {
           <Center pr={4} pl={4} pt={4} pb={4}>
             {configData.result.chatbotDescription[0]}
           </Center>
-          <Box bg="white" borderRadius="xl" p={4} mb={4} ml={4} mr={4}>
+          <Box
+            bg="white"
+            borderRadius="xl"
+            p={4}
+            mb={4}
+            ml={4}
+            mr={4}
+            display={isDisplayChat}
+            userSelect={"none"}
+          >
             <iframe
               src="https://miibo.jp/chat/7eaf9ab0-e179-4857-8ff8-3f83e46f6251189dd2e771a157?name=%E3%83%A4%E3%83%89%E3%82%AB%E3%83%AA%E3%81%8F%E3%82%93"
               width="100%"
               height="400px"
+              onLoad={() => {
+                async () => {
+                  console.log("start");
+                  console.log(`${new Date().getSeconds()} 秒`);
+
+                  await sleep(5);
+                  console.log(`${new Date().getSeconds()} 秒`);
+                  setIsDisplayChat("");
+
+                  console.log("end");
+                };
+                console.log("on load");
+              }}
             ></iframe>
           </Box>
 
