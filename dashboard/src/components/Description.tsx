@@ -13,22 +13,33 @@ import {
   AccordionPanel,
   UnorderedList,
   ListItem,
+  Link as ChakraLink,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { Icon } from '@chakra-ui/react';
 import { CheckCircleIcon } from '@chakra-ui/icons';
 import { FaGithub } from 'react-icons/fa';
-import { useResetRecoilState } from 'recoil';
+import { useRecoilValue, useResetRecoilState } from 'recoil';
 
-import { householdAtom } from '../state';
+import { agreedToTermsAtom, householdAtom } from '../state';
 import configData from '../config/app_config.json';
 import bokyuIcon from '../assets/bokyu_lab_icon_cyan.png';
 import yadokariKunIcon from '../assets/yadokari-kun.png';
+import TermsModal from './TermsModal';
 
 const defaultInnerWidth = window.innerWidth;
 
 function Description() {
   const [screenWidth, setScreenWidth] = useState(defaultInnerWidth);
   const [isMobile, setIsMobile] = useState(defaultInnerWidth <= 800);
+  const agreedToTerms = useRecoilValue(agreedToTermsAtom);
+  const {
+    isOpen: isModalOpen,
+    onOpen: onModalOpen,
+    onClose: onModalClose,
+  } = useDisclosure();
+  const [modalLink, setModalLink] = useState('/');
+
   const resetHousehold = useResetRecoilState(householdAtom);
 
   useEffect(() => {
@@ -43,6 +54,9 @@ function Description() {
     }
     window.addEventListener('resize', handleResize);
   });
+
+  // 何もしない関数（onClickで発火する関数のデフォルト値として使用）
+  const noop = () => {};
 
   return (
     <>
@@ -72,15 +86,7 @@ function Description() {
           />
         )}
 
-        <Center
-          fontSize={configData.style.subTitleFontSize}
-          mb="0.5em"
-          color="cyan.800"
-        >
-          <CheckCircleIcon color="cyan.600" mr="0.3em" />
-          {configData.description.feature[0]}
-        </Center>
-        <Box fontSize={configData.style.descriptionFontSize} mb="1.5em">
+        <Box fontSize={configData.style.descriptionFontSize} mb="1em">
           {configData.description.description[0]}
         </Box>
 
@@ -90,7 +96,7 @@ function Description() {
           color="cyan.800"
         >
           <CheckCircleIcon color="cyan.600" mr="0.3em" />
-          {configData.description.feature[1]}
+          {configData.description.feature[0]}
         </Center>
         <Box fontSize={configData.style.descriptionFontSize} mb="1.5em">
           {configData.description.description[1]}
@@ -102,10 +108,36 @@ function Description() {
           color="cyan.800"
         >
           <CheckCircleIcon color="cyan.600" mr="0.3em" />
-          {configData.description.feature[2]}
+          {configData.description.feature[1]}
         </Center>
         <Box fontSize={configData.style.descriptionFontSize} mb="1.5em">
           {configData.description.description[2]}
+        </Box>
+
+        <Center
+          fontSize={configData.style.subTitleFontSize}
+          mb="0.5em"
+          color="cyan.800"
+        >
+          <CheckCircleIcon color="cyan.600" mr="0.3em" />
+          {configData.description.feature[2]}
+        </Center>
+        <Box fontSize={configData.style.descriptionFontSize} mb="1.5em">
+          {configData.description.description[3]}
+        </Box>
+
+        <Center
+          fontSize={configData.style.subTitleFontSize}
+          mb="0.5em"
+          color="cyan.800"
+        >
+          <CheckCircleIcon color="cyan.600" mr="0.3em" />
+          {configData.description.feature[3]}
+        </Center>
+        <Box fontSize={configData.style.descriptionFontSize} mb="0.5em">
+          {configData.description.description[4]}
+          <br></br>
+          {configData.description.description[5]}
         </Box>
 
         {/* 見積もり対象制度一覧 */}
@@ -202,10 +234,26 @@ function Description() {
         </Center>
       </Box>
 
+      <TermsModal
+        isOpen={isModalOpen}
+        onOpen={onModalOpen}
+        onClose={onModalClose}
+        to={modalLink}
+      />
+
       <Center pr={4} pl={4} pb={4} style={{ textAlign: 'center' }}>
         <Button
           as={RouterLink}
-          to="/calculate-disaster"
+          // 規約に同意していない場合のみモーダルが開く
+          to={agreedToTerms ? '/calculate-disaster' : '/'}
+          onClick={
+            agreedToTerms
+              ? noop
+              : () => {
+                  setModalLink('/calculate-disaster');
+                  onModalOpen();
+                }
+          }
           fontSize={configData.style.subTitleFontSize}
           borderRadius="xl"
           height="4em"
@@ -223,7 +271,16 @@ function Description() {
       <Center pr={4} pl={4} pb={4} style={{ textAlign: 'center' }}>
         <Button
           as={RouterLink}
-          to="/calculate"
+          // 規約に同意していない場合のみモーダルが開く
+          to={agreedToTerms ? '/calculate' : '/'}
+          onClick={
+            agreedToTerms
+              ? noop
+              : () => {
+                  setModalLink('/calculate');
+                  onModalOpen();
+                }
+          }
           style={{ marginRight: '8%' }}
           fontSize={configData.style.subTitleFontSize}
           borderRadius="xl"
@@ -239,7 +296,16 @@ function Description() {
         </Button>
         <Button
           as={RouterLink}
-          to="/calculate-simple"
+          // 規約に同意していない場合のみモーダルが開く
+          to={agreedToTerms ? '/calculate-simple' : '/'}
+          onClick={
+            agreedToTerms
+              ? noop
+              : () => {
+                  setModalLink('/calculate-simple');
+                  onModalOpen();
+                }
+          }
           fontSize={configData.style.subTitleFontSize}
           borderRadius="xl"
           height="4em"
@@ -252,6 +318,12 @@ function Description() {
           <br />
           見積もり
         </Button>
+        <br />
+      </Center>
+      <Center mb="1em">
+        <ChakraLink as={RouterLink} to="/privacypolicy" ml="1.0em">
+          プライバシーポリシー
+        </ChakraLink>
       </Center>
     </>
   );

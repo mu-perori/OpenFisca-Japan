@@ -6,6 +6,7 @@ import {
   AccordionButton,
   AccordionPanel,
 } from '@chakra-ui/react';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 
 // 制度の算出結果 result value of loans
 export const LoanAccordion = ({ loanResult }: { loanResult: any }) => {
@@ -22,8 +23,8 @@ export const LoanAccordion = ({ loanResult }: { loanResult: any }) => {
                     {val.name}
                   </Box>
                   <Box flex="1" textAlign="right">
-                    {/* １万円単位で表示 */}~{val.displayedMoney / 10_000} 万
-                    {val.unit}
+                    {/* 小数点1桁まで万円単位で表示 */}~
+                    {Math.floor(val.displayedMoney / 1_000) / 10} 万{val.unit}
                   </Box>
                 </AccordionButton>
               </h2>
@@ -35,7 +36,10 @@ export const LoanAccordion = ({ loanResult }: { loanResult: any }) => {
                   </span>
                 ))}
                 <Box color="blue">
-                  <a href={val.reference}>詳細リンク</a>
+                  <a href={val.reference} target="_blank" rel="noreferrer">
+                    詳細リンク
+                    <ExternalLinkIcon ml={1} />
+                  </a>
                 </Box>
               </AccordionPanel>
             </AccordionItem>
