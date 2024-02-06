@@ -15,7 +15,7 @@ def export_json(file_name, output_dict):
         json.dump(output_dict, f, indent=2, ensure_ascii=False)
 
 # ファイルパス
-RESULT = "write/能登半島自信災害救助法適用市区町村"
+RESULT = "write/能登半島地震災害救助法適用市区町村"
 
 
 pref_list = ["新潟県", "富山県", "石川県", "福井県"]

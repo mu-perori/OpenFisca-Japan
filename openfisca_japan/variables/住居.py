@@ -23,7 +23,15 @@ def 市区町村級地区分():
     """
     with open("openfisca_japan/assets/市区町村級地区分.json") as f:
         return json.load(f)
-
+"""
+@cache
+def 能登半島地震災害救助法適用市区町村():
+    """
+    jsonファイルから値を取得
+    """
+    with open("openfisca_japan/assets/能登半島地震災害救助法適用市区町村.json") as f:
+        return json.load(f)
+"""
 
 class 居住都道府県(Variable):
     value_type = str
@@ -71,3 +79,18 @@ class 居住級地区分2(Variable):
         # NOTE: 市区町村級地区分()[都道府県][市区町村][1] が級地区分2を表す
         return [市区町村級地区分()[都道府県][市区町村][1] if 市区町村 in 市区町村級地区分()[都道府県] else 2
                 for 都道府県, 市区町村 in zip(居住都道府県, 居住市区町村)]
+
+"""
+class 災害救助法の適用地域である(Variable):
+    value_type = bool
+    entity = 世帯
+    label = "災害救助法の適用地域である"
+    definition_period = DAY
+    reference = "" # TODO: 要確認
+
+    def formula(対象世帯, 対象期間, _parameters):
+        居住都道府県 = 対象世帯("居住都道府県", 対象期間)
+        居住市区町村 = 対象世帯("居住市区町村", 対象期間)
+        return [能登半島地震災害救助法適用市区町村()[都道府県][市区町村] if 都道府県 in 能登半島地震災害救助法適用市区町村() and 市区町村 in 能登半島地震災害救助法適用市区町村()[都道府県]: else False
+                for 都道府県, 市区町村 in zip(居住都道府県, 居住市区町村)]
+"""
