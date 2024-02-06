@@ -26,9 +26,6 @@ def 市区町村級地区分():
 """
 @cache
 def 能登半島地震災害救助法適用市区町村():
-    """
-    # jsonファイルから値を取得
-    """
     with open("openfisca_japan/assets/能登半島地震災害救助法適用市区町村.json") as f:
         return json.load(f)
 """
